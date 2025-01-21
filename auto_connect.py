@@ -14,6 +14,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException
 from loguru import logger
 
@@ -49,11 +50,28 @@ class NetworkConfig:
 
 class NetworkConnector:
     def __init__(self, config_path=None):
+        self._setup_logging()
+        # 尝试获取webdriver
+        try:
+            # 设置环境变量以禁用 DevTools 输出
+            os.environ["WDM_LOG_LEVEL"] = "0"
+            logger.info("正在获取webdriver...")
+            driver = self._get_driver()
+        except Exception as e:
+            logger.error(f"获取webdriver失败: {str(e)}")
+            logger.error("请检查Chrome浏览器版本是否与webdriver匹配")
+            sys.exit(1)
+        finally:
+            driver.quit()
+
         # 加载配置, 只加载同级文件夹下的config.yaml
         config_path = Path(__file__).parent / "config.yaml" if config_path is None else config_path
+        logger.info("正在加载配置文件...")
         self.config = self._load_config(config_path)
+
+        # 初始化WMI对象
+        logger.info("正在初始化WMI对象...")
         self.wmi_obj = wmi.WMI()
-        self._setup_logging()
 
     def _setup_logging(self):
         logger.remove()
@@ -93,11 +111,19 @@ class NetworkConnector:
 
     def _get_driver(self) -> webdriver.Chrome:
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless=new")  # 使用新版无头模式
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--log-level=3")  # 添加这一行来减少调试信息
-        # Selenium 4.6.0+ 会自动下载和管理驱动
-        return webdriver.Chrome(options=chrome_options)
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-logging")
+        chrome_options.add_argument("--log-level=3")
+        chrome_options.add_argument("--output=/dev/null")
+        chrome_options.add_argument("--disable-dev-tools")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])  # 禁用 DevTools 消息
+        chrome_options.add_experimental_option("useAutomationExtension", False)
+
+        service = Service(log_path=os.devnull, service_args=["--verbose", "--log-path=NUL"])
+        return webdriver.Chrome(service=service, options=chrome_options)
 
     def check_cable_connected(self, max_retries: int = 3) -> bool:
         """检查网络电缆是否物理连接
