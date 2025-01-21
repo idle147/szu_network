@@ -1,4 +1,4 @@
-loguru
-selenium
-requests
-wmi
+loguru==0.7.3
+selenium==4.26.0
+requests==2.32.2
+wmi==1.5.1
