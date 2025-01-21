@@ -92,7 +92,8 @@ class NetworkConnector:
         retry_count = 0
         while retry_count < max_retries:
             try:
-                nics = self.wmi_obj.Win32_NetworkAdapter(PhysicalAdapter=True, NetConnectionStatus=2)  # 直接筛选已连接状态
+                # 直接筛选已连接状态
+                nics = self.wmi_obj.Win32_NetworkAdapter(PhysicalAdapter=True, NetConnectionStatus=2)
                 return any(
                     (
                         "802.3" in nic.AdapterType
@@ -109,9 +110,8 @@ class NetworkConnector:
                     self.wmi_obj = wmi.WMI()
                     time.sleep(1)  # 重试前等待
                 continue
-
             except Exception as e:
-                ConnectionError(e)
+                raise ConnectionError(e) from e
 
         logger.error("达到最大重试次数,网络检查失败")
         return False
@@ -166,11 +166,11 @@ class NetworkConnector:
         while True:
             try:
                 if not self.check_connection():
-                    logger.warning("发现网络连接断开")
+                    logger.warning("发现网络连接断开, 尝试连接网络...")
                     if self.do_connect():
-                        logger.info("重新连接成功")
+                        logger.info("重新连接成功[:)]")
                     else:
-                        logger.error("重新连接失败")
+                        logger.error("重新连接失败[:(]")
                 else:
                     logger.info("网络连接正常")
                 logger.info(f"沉睡{self.config.check_interval}秒, 等待下一次检查...")
