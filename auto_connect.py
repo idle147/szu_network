@@ -1,4 +1,5 @@
 import contextlib
+from pathlib import Path
 import sys
 import requests
 import time
@@ -30,16 +31,26 @@ class NetworkConfig:
     password: str
     url: str = "https://net.szu.edu.cn"
     check_interval: int = 30
-    connection_timeout: int = 2
+    connection_timeout: int = 1
     test_urls: List[str] = None
 
     def __post_init__(self):
         if self.test_urls is None:
             self.test_urls = ["https://www.baidu.com", "https://www.qq.com"]
 
+    def check_username(self):
+        if self.username == "your_username":
+            raise ValueError("未变更默认用户名")
+
+    def check_password(self):
+        if self.password == "your_password":
+            raise ValueError("未变更默认密码")
+
 
 class NetworkConnector:
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path=None):
+        # 加载配置, 只加载同级文件夹下的config.yaml
+        config_path = Path(__file__).parent / "config.yaml" if config_path is None else config_path
         self.config = self._load_config(config_path)
         self.wmi_obj = wmi.WMI()
         self._setup_logging()
@@ -63,20 +74,28 @@ class NetworkConnector:
             level="INFO",
         )
 
-    def _load_config(self, config_path: str) -> NetworkConfig:
-        if os.path.exists(config_path):
+    def _load_config(self, config_path: Path) -> NetworkConfig:
+        if config_path.exists():
             with open(config_path, "r", encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
+            config = NetworkConfig(**config_data)
+            config.check_username()
+            config.check_password()
         else:
-            config_data = {"username": "your_username", "password": "your_password"}
+            # 配置文件不存在, 创建默认配置, 要求将NetworkConfig的属性全部写入配置条目
+            config = NetworkConfig(**{"username": "your_username", "password": "your_password"})
             with open(config_path, "w", encoding="utf-8") as f:
-                yaml.dump(config_data, f)
-        return NetworkConfig(**config_data)
+                yaml.dump(config.__dict__, f)
+            logger.warning(f"未找到配置文件, 已生成默认配置文件: {config_path}")
+            logger.warning("请修改配置文件后重新运行程序")
+            sys.exit(1)
+        return config
 
     def _get_driver(self) -> webdriver.Chrome:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--log-level=3")  # 添加这一行来减少调试信息
         # Selenium 4.6.0+ 会自动下载和管理驱动
         return webdriver.Chrome(options=chrome_options)
 
