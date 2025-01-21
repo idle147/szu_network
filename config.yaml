@@ -1,0 +1,9 @@
+username: "your_username"
+password: "your_password"
+url: "https://net.szu.edu.cn"
+check_interval: 30
+connection_timeout: 2
+test_urls:
+  - "https://www.baidu.com"
+  - "https://www.qq.com"
+  - "https://www.bing.com"
