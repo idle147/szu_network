@@ -75,7 +75,7 @@ class NetworkConnector:
 
     def _get_driver(self) -> webdriver.Chrome:
         chrome_options = Options()
-        # chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
         # Selenium 4.6.0+ 会自动下载和管理驱动
         return webdriver.Chrome(options=chrome_options)
