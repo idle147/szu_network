@@ -28,7 +28,6 @@ pip install -r requirements.txt
 - selenium: 网页自动化
 - requests: 网络请求
 - wmi: Windows系统接口
-- pyyaml: 配置文件解析
 
 ## 配置说明
 
@@ -55,9 +54,9 @@ python auto_connect.py
 ```
 
 ### 方式2: 后台运行
-双击运行下述文件, 将在后台静默运行。
+双击运行下述文件, 将在后台静默运行。如何当前文件夹有输出日志则说明环境配置成功,否则需要重新配置环境
 ```
-./script/start_run.bat
+.start_run.bat
 ```
 
 
@@ -70,16 +69,10 @@ python auto_connect.py
 - 自动压缩历史日志文件
 
 ## 注意事项
-
 1. 首次运行会自动创建配置文件模板
 2. 请确保已正确配置账号密码
 3. 需要安装Chrome浏览器
 4. 仅支持Windows系统
-5. 建议使用 
-
-start_run.bat
-
- 在后台运行
 
 ## 工作原理
 
