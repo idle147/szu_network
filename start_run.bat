@@ -1,10 +1,31 @@
-@echo off 
-:: 如果第一个参数为 "h"，则跳转到标签 :begin
-if "%1" == "h" goto begin 
+@echo off
+REM 检查 Python 是否安装
+where python >nul 2>nul
+if errorlevel 1 (
+    echo Error: Python is not installed or not in PATH!
+    pause
+    exit /b 1
+)
 
-:: 使用 mshta 和 vbscript 创建一个隐藏的命令窗口运行当前脚本，再次传递 "h" 参数，并退出当前窗口
-mshta vbscript:createobject("wscript.shell").run("%~0 h",0)(window.close)&&exit 
+REM 检查文件是否存在
+if not exist "%~dp0auto_connect.py" (
+    echo Error: auto_connect.py not found!
+    pause
+    exit /b 1
+)
 
-:begin
-:: 启动一个后台命令窗口，运行 pythonw，执行指定的 Python 脚本，并保持窗口打开
-start /b cmd /k "pythonw ..\auto_connect.py"
+REM 启动程序并隐藏窗口
+start "" /min cmd /c "python %~dp0auto_connect.py"
+timeout /t 1 /nobreak >nul
+
+REM 检查进程
+tasklist /FI "IMAGENAME eq python.exe" /FO CSV /NH | find /I "python.exe" >nul
+if errorlevel 1 (
+    echo [ERROR] Python program failed to start, please check the error
+    pause
+    exit /b 1
+) else (
+    echo [SUCCESS] Start python.exe successfully
+    echo [INFO] You can close this window now
+    pause
+)
