@@ -1,3 +1,4 @@
+import contextlib
 import sys
 import requests
 import time
@@ -92,17 +93,15 @@ class NetworkConnector:
         while retry_count < max_retries:
             try:
                 nics = self.wmi_obj.Win32_NetworkAdapter(PhysicalAdapter=True, NetConnectionStatus=2)  # 直接筛选已连接状态
-                for nic in nics:
-                    # 检查是否是有线网卡且处于工作状态
-                    if (
+                return any(
+                    (
                         "802.3" in nic.AdapterType
                         and nic.NetEnabled
                         and not nic.NetConnectionID.startswith("VMware")
                         and not nic.NetConnectionID.startswith("VirtualBox")
-                    ):
-                        return True
-                return False
-
+                    )
+                    for nic in nics
+                )
             except wmi.x_wmi as e:
                 retry_count += 1
                 logger.warning(f"WMI连接异常,重试{retry_count}/{max_retries}: {str(e)}")
@@ -136,12 +135,10 @@ class NetworkConnector:
             wait = WebDriverWait(driver, time_wait)
 
             # 检查是否出现logout按钮, 如果有则表示已经登录, 直接返回
-            try:
+            with contextlib.suppress(TimeoutException):
                 wait.until(EC.presence_of_element_located((By.ID, "logout")))
                 logger.info("已登录,无需重新连接")
                 return True
-            except TimeoutException:
-                pass  # 未找到logout按钮,继续登录流程
 
             username_field = wait.until(EC.presence_of_element_located((By.ID, "username")))
             password_field = wait.until(EC.presence_of_element_located((By.ID, "password")))
@@ -154,8 +151,11 @@ class NetworkConnector:
             # 检查是否出现弹窗
             try:
                 dialog = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.content > div.section")))
-                raise ConnectionError(dialog.text)
-
+                # 检查一下链接
+                if self.check_connection():
+                    return True
+                else:
+                    raise ConnectionError(dialog.text)
             except TimeoutException:
                 return bool(wait.until(EC.presence_of_element_located((By.ID, "logout"))))
         finally:
