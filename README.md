@@ -14,6 +14,11 @@
 - Windows 操作系统
 - Chrome浏览器
 
+## linux的使用说明
+- `chmod +x ./linux portal`
+- `https://net.szu.edu.cn/srun_portal_pc?ac_id=1&theme=proyx`
+- TODO: 自动化脚本正在完善...
+
 ## 安装步骤
 
 1. 克隆或下载本项目
